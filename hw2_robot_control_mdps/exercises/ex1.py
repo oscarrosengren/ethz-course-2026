@@ -17,8 +17,11 @@ def get_lemniscate_keypoint(t, a=0.2):
     Returns:
         y (float or np.ndarray): y coordinates of the keypoint on the lemniscate.
         z (float or np.ndarray): z coordinates of the keypoint on the lemniscate.
-    """
-    raise NotImplementedError()
+    """    
+    y = a * np.cos(t) / (1 + np.sin(t)**2)
+    z = a * np.cos(t) * np.sin(t) / (1 + np.sin(t)**2)
+    return y, z
+
 
 def build_keypoints(count=16, width=0.25, x_offset=0.3, z_offset=0.25):
     """TODO:
@@ -37,8 +40,18 @@ def build_keypoints(count=16, width=0.25, x_offset=0.3, z_offset=0.25):
 
     Returns:
         np.ndarray: Array of shape (count, 3) containing the generated keypoints.
-    """
-    raise NotImplementedError()
+    """    
+    t = np.linspace(0, 2 * np.pi, count, endpoint=False)
+    y, z = get_lemniscate_keypoint(t, a=width)
+    
+    keypoints = np.zeros((count, 3))
+    keypoints[:, 0] = x_offset
+    keypoints[:, 1] = y
+    keypoints[:, 2] = z + z_offset
+    
+    return keypoints
+
+    
 
 def ik_track(model, data, site_name, target_pos,
              damping=1e-3, pos_gain=2.0, dt=0.1, max_iters=2000):

@@ -75,7 +75,7 @@ def process_action(action: np.ndarray, jnt_range: np.ndarray) -> np.ndarray:
     
 
 
-def compute_reward(ee_tracking_error: float) -> float:
+def compute_reward(ee_tracking_error: float, qvel: np.ndarray) -> float:
     """
     TODO: 
     Calculate the reward based on the distance (error) to the target. 
@@ -100,13 +100,15 @@ def compute_reward(ee_tracking_error: float) -> float:
         sparse_reward = 1.0 
     else:
         sparse_reward = 0.0 
-    reward = dense_reward + sparse_reward
-    return reward
+    pen_const =0.01
+    vel_penalty = pen_const *np.sum(np.square(qvel))
+    reward = dense_reward + sparse_reward - vel_penalty
+    return float(reward)
 
 
 
 
-def get_obs(qpos: np.ndarray, ee_pos_w: np.ndarray, ee_rot_w: np.ndarray, base_pos_w: np.ndarray, base_rot_w: np.ndarray, target_pos_w: np.ndarray) -> np.ndarray:
+def get_obs(qpos: np.ndarray, ee_pos_w: np.ndarray, ee_rot_w: np.ndarray, base_pos_w: np.ndarray, base_rot_w: np.ndarray, target_pos_w: np.ndarray, qvel:np.ndarray) -> np.ndarray:
     """
     TODO: Extract the observation vector from the environment robot state variables. 
 
@@ -138,6 +140,7 @@ def get_obs(qpos: np.ndarray, ee_pos_w: np.ndarray, ee_rot_w: np.ndarray, base_p
     base_pos_w = base_pos_w.copy()
     base_rot_w = base_rot_w.copy()
     target_pos_w = target_pos_w.copy()
+    qvel = qvel.copy()
     # get pos from world to base
     ee_pos_base = base_rot_w.T @ (ee_pos_w - base_pos_w)
     target_pos_base = base_rot_w.T @ (target_pos_w - base_pos_w)
@@ -150,6 +153,6 @@ def get_obs(qpos: np.ndarray, ee_pos_w: np.ndarray, ee_rot_w: np.ndarray, base_p
     ee_quat_base_raw = quat_mul(q_base_inv, q_ee_w)
     ee_quat_base = quat_normalize(ee_quat_base_raw)
 
-    return np.concatenate([qpos, ee_pos_base, ee_quat_base, target_pos_base])
+    return np.concatenate([qpos, ee_pos_base, ee_quat_base, target_pos_base, qvel])
     
 

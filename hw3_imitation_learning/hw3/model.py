@@ -36,6 +36,17 @@ class ObstaclePolicy(BasePolicy):
     A simple MLP that maps a state vector to a flat action chunk
     (chunk_size * action_dim) and reshapes to (B, chunk_size, action_dim).
     """
+    def __init__(self, state_dim: int, action_dim: int, chunk_size: int, hidden_dim: int = 256):
+        super().__init__(state_dim, action_dim, chunk_size)
+        self.mlp = nn.Sequential(
+            nn.Linear(state_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, chunk_size * action_dim) # Output: 16 * 4 = 64 numbers
+        )
 
     def forward(self) -> torch.Tensor:
         """Return predicted action chunk of shape (B, chunk_size, action_dim)."""
@@ -71,18 +82,21 @@ def build_policy(
     *,
     state_dim: int,
     action_dim: int,
-    # TODO,
+    chunk_size: int,
+    hiddem_dim: int = 256
 ) -> BasePolicy:
     if policy_type == "obstacle":
         return ObstaclePolicy(
             action_dim=action_dim,
             state_dim=state_dim,
-            # TODO: Build with your chosen specifications
+            chunk_size=chunk_size,
+            hidden_dim=hidden_dim
         )
     if policy_type == "multitask":
         return MultiTaskPolicy(
             action_dim=action_dim,
             state_dim=state_dim,
-            # TODO: Build with your chosen specifications
+            chunk_size=chunk_size,
+            hidden_dim=hidden_dim
         )
     raise ValueError(f"Unknown policy type: {policy_type}")

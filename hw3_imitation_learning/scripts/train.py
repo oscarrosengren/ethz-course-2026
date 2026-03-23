@@ -26,11 +26,14 @@ from hw3.model import BasePolicy, build_policy
 
 # TODO: Any imports you want from torch or other libraries we use. Not allowed: libraries we don't use
 from torch.utils.data import DataLoader, random_split
+import torch.nn.functional as F
 
 # TODO: Choose your own hyperparameters!
-EPOCHS = ... 
-BATCH_SIZE = ...
-LR = ...
+'''EPOCHS = 100 
+BATCH_SIZE = 64
+LR = 1e-3
+WEIGHT_DECAY = 1e-5'''
+
 VAL_SPLIT = 0.1
 
 
@@ -48,7 +51,23 @@ def train_one_epoch(
         states, action_chunks = batch
         # TODO: Implement the training step for one batch here.
         # This mostly: Get states and action_chunks onto the correct device, compute the loss, and step the optimizer.
+        # Move data to the correct device
+        states = states.to(device)
+        action_chunks = action_chunks.to(device)
 
+        # Forward pass
+        optimizer.zero_grad()
+        predicted_chunks = model(states)
+        
+        # Compute loss (Mean Squared Error is standard for continuous action chunking)
+        loss = F.mse_loss(predicted_chunks, action_chunks)
+        
+        # Backward pass and optimize
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+        n_batches += 1
     return total_loss / max(n_batches, 1)
 
 
@@ -65,6 +84,18 @@ def evaluate(
     for batch in loader:
         states, action_chunks = batch
         # TODO: Implement the evaluation step for one batch here.
+        # Move data to the correct device
+        states = states.to(device)
+        action_chunks = action_chunks.to(device)
+
+        # Forward pass
+        predicted_chunks = model(states)
+        
+        # Compute loss
+        loss = F.mse_loss(predicted_chunks, action_chunks)
+
+        total_loss += loss.item()
+        n_batches += 1
 
     return total_loss / max(n_batches, 1)
 
@@ -104,6 +135,12 @@ def main() -> None:
         "If omitted, uses the action_key attribute from the zarr metadata.",
     )
     parser.add_argument("--seed", type=int, default=42, help="Random seed.")
+
+    parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs.")
+    parser.add_argument("--batch-size", type=int, default=64, help="Batch size for training.")
+    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate.")
+    parser.add_argument("--weight-decay", type=float, default=1e-4, help="Weight decay for AdamW.")
+
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -159,15 +196,15 @@ def main() -> None:
         args.policy,
         state_dim=states.shape[1],
         action_dim=actions.shape[1],
-        # TODO: build with your desired specifications
+        chunk_size=args.chunk_size
     ).to(device)
 
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Model parameters: {n_params:,}")
 
     # TODO: implement an optimizer and scheduler
-    # optimizer =
-    # scheduler =
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
     # ── training loop ─────────────────────────────────────────────────
     best_val = float("inf")

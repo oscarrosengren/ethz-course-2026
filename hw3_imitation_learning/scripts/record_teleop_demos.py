@@ -167,7 +167,12 @@ class BaseCv2TeleopRecorder:
 
     def _render_bgr(self, camera_name: str) -> np.ndarray:
         self.renderer.update_scene(self.data, camera=camera_name)
-        return cv2.cvtColor(self.renderer.render(), cv2.COLOR_RGB2BGR)
+        img = cv2.cvtColor(self.renderer.render(), cv2.COLOR_RGB2BGR)
+        if camera_name == "right_wrist":
+            img = cv2.flip(img, 1)  # horizontal flip
+        return img
+
+
 
     def _compose_views(self) -> np.ndarray:
         images = {cam: self._render_bgr(cam) for cam in CAMERA_NAMES}

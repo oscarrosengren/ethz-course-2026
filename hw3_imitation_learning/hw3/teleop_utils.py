@@ -31,7 +31,7 @@ JOINT_NAMES: tuple[str, ...] = (
     "Wrist_Roll",
     "Jaw",
 )
-CAMERA_NAMES: tuple[str, ...] = ("left_wrist", "angle", "top")
+CAMERA_NAMES: tuple[str, ...] = ("left_wrist", "angle", "top", "right_wrist")
 
 DEFAULT_KEYMAP_PATH: Path = Path(__file__).resolve().parent / "keymap.json"
 
@@ -145,9 +145,27 @@ def handle_teleop_key(
 
 
 # ── camera view composition ──────────────────────────────────────────
-
-
 def compose_camera_views(
+    images: dict[str, np.ndarray],
+    camera_names: tuple[str, ...] = CAMERA_NAMES,
+) -> np.ndarray:
+    views = []
+    for cam in camera_names:
+        img = images[cam].copy()
+        cv2.putText(
+            img, cam, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2
+        )
+        views.append(img)
+
+    if len(views) != 4:
+        raise ValueError(f"Expected 4 camera views, got {len(views)}")
+
+    top_row = np.concatenate(views[:2], axis=1)
+    bottom_row = np.concatenate(views[2:4], axis=1)
+    return np.concatenate([top_row, bottom_row], axis=0)
+
+
+'''def compose_camera_views(
     images: dict[str, np.ndarray],
     camera_names: tuple[str, ...] = CAMERA_NAMES,
 ) -> np.ndarray:
@@ -181,7 +199,7 @@ def compose_camera_views(
         bottom_row = bottom
     return np.concatenate([top_row, bottom_row], axis=0)
 
-
+'''
 # ── ZarrEpisodeWriter ────────────────────────────────────────────────
 
 

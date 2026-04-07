@@ -1,12 +1,16 @@
+.DS_Store
 .gitignore
 Installation_Guide.md
+MUJOCO_LOG.TXT
 README.md
 pyproject.toml
 requirements.txt
+env/so100_tracking_env-bonus.py
 env/so100_tracking_env.py
 exercises/__init__.py
 exercises/ex1.py
 exercises/ex2.py
+exercises/ex3-bonus.py
 exercises/ex3.py
 scripts/__init__.py
 scripts/evaluate_rand_targets.py

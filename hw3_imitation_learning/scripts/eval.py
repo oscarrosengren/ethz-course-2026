@@ -80,6 +80,10 @@ def run_episode(
         wrong_in_bin = check_wrong_cube_in_bin(env) if multicube else None
 
         if success:
+            print ("Success!")
+            t = time.time()
+            while t + 2 > time.time():
+                time.sleep(0.1)
             return True, False, wrong_in_bin
 
         if check_cube_out_of_bounds(env):

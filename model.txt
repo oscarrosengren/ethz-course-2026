@@ -1,0 +1,13 @@
+# TODO: Students implement MultiTaskPolicy here.
+class MultiTaskPolicy(BasePolicy):
+    """Goal-conditioned policy for the multicube scene."""
+
+    def compute_loss(self, state: torch.Tensor, action_chunk: torch.Tensor) -> torch.Tensor:
+        raise NotImplementedError
+
+    def sample_actions(self, state: torch.Tensor) -> torch.Tensor:
+        raise NotImplementedError
+
+    def forward(self) -> torch.Tensor:
+        """Return predicted action chunk of shape (B, chunk_size, action_dim)."""
+        raise NotImplementedError

@@ -107,6 +107,9 @@ def main() -> None:
         "--zarr", type=Path, required=True, help="Path to processed .zarr store."
     )
     parser.add_argument(
+        "--extra-zarr", type=Path, nargs="+", default=[], help="Additional paths to .zarr stores to merge."
+    )
+    parser.add_argument(
         "--policy",
         choices=["obstacle", "multitask"],
         default="obstacle",
@@ -140,7 +143,7 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=64, help="Batch size for training.")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate.")
     parser.add_argument("--weight-decay", type=float, default=1e-4, help="Weight decay for AdamW.")
-
+    parser.add_argument("--name", default=None, help="name of output")
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -185,10 +188,10 @@ def main() -> None:
     )
 
     train_loader = DataLoader(
-        train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=0
+        train_ds, batch_size=args.batch_size, shuffle=True, num_workers=0
     )
     val_loader = DataLoader(
-        val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=0
+        val_ds, batch_size=args.batch_size, shuffle=False, num_workers=0
     )
 
     # ── model ─────────────────────────────────────────────────────────
@@ -208,7 +211,8 @@ def main() -> None:
 
     # ── training loop ─────────────────────────────────────────────────
     best_val = float("inf")
-
+    if args.name is None:
+        args.name = ""
     # Derive action space tag from action keys (e.g. "ee_xyz", "joints")
     action_space = "unknown"
     if args.action_keys:
@@ -218,7 +222,7 @@ def main() -> None:
                 action_space = base.removeprefix("action_")
                 break
 
-    save_name = f"best_model_{action_space}_{args.policy}.pt"
+    save_name = f"best_model_{args.name}_{action_space}_{args.policy}.pt"
 
     n_dagger_eps = 0
     for zp in zarr_paths:
@@ -234,7 +238,7 @@ def main() -> None:
     save_path = ckpt_dir / save_name
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
-    for epoch in range(1, EPOCHS + 1):
+    for epoch in range(1, args.epochs + 1):
         train_loss = train_one_epoch(model, train_loader, optimizer, device)
         val_loss = evaluate(model, val_loader, device)
         scheduler.step()
@@ -266,7 +270,7 @@ def main() -> None:
             tag = " ✓ saved"
 
         print(
-            f"Epoch {epoch:3d}/{EPOCHS} | "
+            f"Epoch {epoch:3d}/{args.epochs} | "
             f"train {train_loss:.6f} | val {val_loss:.6f}{tag}"
         )
 
